@@ -21,14 +21,22 @@ fi
 
 repo=$1
 
-latest_version=$(gh api -q .tag_name "repos/signalfx/$repo/releases/latest")
+release=$(gh api "repos/signalfx/$repo/releases/latest")
+latest_version=$(jq -r .tag_name <<<"$release")
 latest_vers_no_v="${latest_version#v}" # Remove leading 'v'
+metadata_file_name="${repo}-metadata.yaml"
 
 echo "REPO:            $repo"
 echo "LATEST VERSION:  $latest_version"
 
 if ! test -d apm/$repo; then
   echo "Skipping ${repo} as ${repo}/metadata.yaml does not exist."
+  exit 0
+fi
+
+if ! jq -e --arg name "$metadata_file_name" \
+  'any(.assets[]; .name == $name)' <<<"$release" >/dev/null; then
+  echo "Skipping ${repo}: release ${latest_version} does not include ${metadata_file_name}."
   exit 0
 fi
 
@@ -45,7 +53,6 @@ else
   echo
 fi
 
-metadata_file_name="${repo}-metadata.yaml"
 gh release download ${latest_version} -R signalfx/$repo -p ${metadata_file_name} -O apm/$repo/metadata.yaml --clobber
 
 message="Update $repo version to $latest_version"
