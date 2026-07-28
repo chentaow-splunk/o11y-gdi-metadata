@@ -16,8 +16,8 @@ package configschema // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"fmt"
+	"go/build"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -105,28 +105,17 @@ func (dr dirResolver) packagePathToGoPath(packagePath string) (string, error) {
 }
 
 // modfileRequreToGoPath converts a modfile.Require value to a fully-qualified
-// filesystem path in the active Go module cache.
+// filesystem path with a GOPATH prefix.
 func modfileRequreToGoPath(required *modfile.Require) (string, error) {
 	path, err := requireTokensToPartialPath(required.Syntax.Token)
 	if err != nil {
 		return "", err
 	}
-	goModCache, err := goModCachePath()
-	if err != nil {
-		return "", err
+	goPath := os.Getenv("GOPATH")
+	if goPath == "" {
+		goPath = build.Default.GOPATH
 	}
-	return filepath.Join(goModCache, path), nil
-}
-
-func goModCachePath() (string, error) {
-	if goModCache := os.Getenv("GOMODCACHE"); goModCache != "" {
-		return goModCache, nil
-	}
-	out, err := exec.Command("go", "env", "GOMODCACHE").Output()
-	if err != nil {
-		return "", fmt.Errorf("resolve Go module cache: %w", err)
-	}
-	return strings.TrimSpace(string(out)), nil
+	return filepath.Join(goPath, "pkg", "mod", path), nil
 }
 
 // requireTokensToPartialPath converts a string slice of length two e.g.

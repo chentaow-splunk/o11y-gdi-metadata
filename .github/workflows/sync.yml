@@ -16,32 +16,24 @@ jobs:
     steps:
       - name: Get current date
         id: date
-        run: echo "date=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v6
-      - name: Clone collector source
-        id: collector
-        run: |
-          collector_path="$RUNNER_TEMP/splunk-otel-collector"
-          git clone --depth 1 https://github.com/signalfx/splunk-otel-collector.git "$collector_path"
-          echo "path=$collector_path" >> "$GITHUB_OUTPUT"
-          echo "go-version=$(awk '$1 == "go" { print $2; exit }' "$collector_path/go.mod")" >> "$GITHUB_OUTPUT"
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+      - uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v5
         with:
-          go-version: ${{ steps.collector.outputs.go-version }}
-          cache: false
-      - name: Add config schema generator
+          go-version: '1.21.0'
+      - name: Download components.go
+        run: curl -L https://raw.githubusercontent.com/signalfx/splunk-otel-collector/main/internal/components/components.go -o scripts/cfgschema/components.go
+      - name: Download go.mod
+        run: curl -L https://raw.githubusercontent.com/signalfx/splunk-otel-collector/main/go.mod -o scripts/cfgschema/go.mod
+      - name: Download go.sum
+        run: curl -L https://raw.githubusercontent.com/signalfx/splunk-otel-collector/main/go.sum -o scripts/cfgschema/go.sum
+      - name: Clean up go.mod
         run: |
-          collector_path="${{ steps.collector.outputs.path }}"
-          mkdir -p "$collector_path/cmd/configschema" "$collector_path/internal/configschema"
-          cp scripts/cfgschema/main.go "$collector_path/cmd/configschema/main.go"
-          cp -R scripts/cfgschema/lib/configschema/. "$collector_path/internal/configschema/"
-      - name: Generate settings metadata
-        working-directory: ${{ steps.collector.outputs.path }}
-        run: |
-          go get github.com/fatih/structtag@v1.2.0
-          go test ./internal/configschema
-          go run ./cmd/configschema -s . -o "$GITHUB_WORKSPACE/cfg-metadata"
+           cd scripts/cfgschema
+           go mod tidy
+      - name: Download settings from contrib
+        run: go run .
       - name: Download metrics from contrib
         run: |
           ./scripts/import_metric_metadata.sh

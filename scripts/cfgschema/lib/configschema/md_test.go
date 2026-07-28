@@ -29,7 +29,7 @@ import (
 
 func TestGenerateMDFiles(t *testing.T) {
 	err := generateMDFiles(otelcol.Factories{Receivers: map[component.Type]receiver.Factory{
-		component.MustNewType("nop"): receivertest.NewNopFactory(),
+		"nop": receivertest.NewNopFactory(),
 	}}, func(v reflect.Value) (map[string]string, error) {
 		return nil, nil
 	}, func(v reflect.Value, data []byte) error {
