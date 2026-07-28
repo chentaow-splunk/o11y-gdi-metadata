@@ -29,7 +29,7 @@ import (
 func TestGenerateYAMLFiles(t *testing.T) {
 	err := generateYAMLFiles(otelcol.Factories{
 		Receivers: map[component.Type]receiver.Factory{
-			"nop": receivertest.NewNopFactory(),
+			component.MustNewType("nop"): receivertest.NewNopFactory(),
 		},
 	}, func(v reflect.Value) (map[string]string, error) {
 		return nil, nil

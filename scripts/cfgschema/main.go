@@ -17,25 +17,27 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 
-	"github.com/splunk/collector-config-tools/cfgschema/lib/configschema"
+	"github.com/signalfx/splunk-otel-collector/internal/components"
+	"github.com/signalfx/splunk-otel-collector/internal/configschema"
 )
 
 func main() {
-	err := run()
-	if err != nil {
-		fmt.Printf("error: %s\n", err)
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		os.Exit(1)
 	}
 }
 
 func run() error {
 	sourceDir, outputDir := getFlags()
-	c, err := components()
+	c, err := components.Get()
 	if err != nil {
 		return err
 	}
-	return configschema.GenerateYAMLFiles(c, sourceDir, outputDir, "github.com/splunk/collector-config-tools/cfgschema")
+	return configschema.GenerateYAMLFiles(c, sourceDir, outputDir, "github.com/signalfx/splunk-otel-collector")
 }
 
 func getFlags() (string, string) {

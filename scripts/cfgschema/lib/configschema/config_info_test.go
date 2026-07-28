@@ -25,9 +25,11 @@ import (
 )
 
 func TestGetAllCfgInfos(t *testing.T) {
-	infos := getAllCfgInfos(otelcol.Factories{Receivers: map[component.Type]receiver.Factory{"": receivertest.NewNopFactory()}})
+	infos := getAllCfgInfos(otelcol.Factories{Receivers: map[component.Type]receiver.Factory{
+		component.MustNewType("nop"): receivertest.NewNopFactory(),
+	}})
 	assert.Len(t, infos, 1)
 	ci := infos[0]
 	assert.Equal(t, "receiver", ci.Group)
-	assert.EqualValues(t, "nop", ci.Type)
+	assert.Equal(t, "nop", ci.Type.String())
 }

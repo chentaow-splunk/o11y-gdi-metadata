@@ -75,7 +75,10 @@ func getAllCfgInfos(components otelcol.Factories) []cfgInfo {
 // config for the component specified by the passed-in componentType and
 // componentName.
 func getCfgInfo(components otelcol.Factories, componentType, componentName string) (cfgInfo, error) {
-	t := component.Type(componentName)
+	t, err := component.NewType(componentName)
+	if err != nil {
+		return cfgInfo{}, fmt.Errorf("invalid %s name %q: %w", componentType, componentName, err)
+	}
 	switch componentType {
 	case receiverGroup:
 		f := components.Receivers[t]
